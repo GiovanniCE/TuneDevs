@@ -1,0 +1,12 @@
+# Ignore local build outputs, editor files, and other artifacts that should not be committed; it provides keeps matching files out of normal git status results.
+
+.DS_Store
+*.zip
+database/.env
+database/mysql-data/
+Backend/.gradle/
+Backend/build/
+Backend/bin/
+tuner-ui/node_modules/
+tuner-ui/dist/
+*.class

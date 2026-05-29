@@ -1,0 +1,41 @@
+# Defines GitLab CI stages for validating and building the project; it provides automated pipeline jobs that report build/test status.
+
+stages:
+  - test
+  - build
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS'
+      when: never
+    - if: '$CI_COMMIT_BRANCH'
+
+backend_build_test:
+  stage: test
+  image: gradle:jdk21
+  script:
+    - cd Backend
+    - gradle test jacocoTestReport bootJar --no-daemon
+    - |
+      awk -F',' 'NR>1 { missed += $4; covered += $5 } END { total = missed + covered; printf "Total Coverage: %.0f%%\n", covered/total*100 }' build/reports/jacoco/test/jacocoTestReport.csv
+  coverage: '/Total Coverage: ([0-9]+)%/'
+  artifacts:
+    paths:
+      - Backend/build/reports/tests/
+      - Backend/build/reports/jacoco/
+      - Backend/build/libs/
+    expire_in: 1 week
+
+frontend_build_lint:
+  stage: build
+  image: node:20
+  script:
+    - cd tuner-ui
+    - npm ci
+    - npm run lint
+    - npm run build
+  artifacts:
+    paths:
+      - tuner-ui/dist/
+    expire_in: 1 week

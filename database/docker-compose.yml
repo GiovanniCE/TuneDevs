@@ -1,0 +1,43 @@
+# Defines the database container used for local development; it provides running MySQL service for the backend.
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: tuner_mysql_db
+    restart: always
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    volumes:
+      - tuner_mysql_data:/var/lib/mysql
+      - type: bind
+        source: ./init.sql
+        target: /docker-entrypoint-initdb.d/init.sql
+        read_only: true
+    ports:
+      - "3306:3306"
+
+  backend:
+    build: ../Backend
+    container_name: tuner_backend
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DB_URL: jdbc:mysql://db:3306/${MYSQL_DATABASE}
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      TUNER_MODE: mock
+
+volumes:
+  tuner_mysql_data:
